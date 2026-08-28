@@ -519,6 +519,40 @@ def get_token_usage():
     return total_p, total_c
 
 
+def get_recent_usage(limit=20):
+    """取最近 limit 条 API 调用记录（站点使用日志，新→旧，只列 type=2 消耗记录）。
+
+    供网页控制台展示：只读复用缓存会话，绝不在此刷新或重新登录——
+    并发轮换 refresh cookie 会与运行中的任务互相顶号。
+    无有效会话或请求失败返回 None。换算：1 显示额度 = 500,000 quota。
+    """
+    if not _www_access_valid():
+        _fill_www_from_cache(load_json(WWW_SESSION_FILE) or {})
+    if not _www_access_valid():
+        return None
+    status, body, _ = http(
+        f"{BASE}/api/log/self?p=1&page_size={limit + 5}",
+        headers={"Authorization": f"Bearer {_www_access}"},
+    )
+    if status != 200 or not body:
+        return None
+    out = []
+    for it in body.get("data", {}).get("items", []):
+        if it.get("type") != 2:
+            continue
+        out.append({
+            "ts": it.get("created_at", 0) or 0,
+            "model": it.get("model_name") or "-",
+            "prompt": it.get("prompt_tokens", 0) or 0,
+            "completion": it.get("completion_tokens", 0) or 0,
+            "spend": round((it.get("quota", 0) or 0) / 500000, 3),
+            "use_time": it.get("use_time", 0) or 0,
+        })
+        if len(out) >= limit:
+            break
+    return out
+
+
 # ═══════════════════════════════ signin 签到 ═══════════════════════════════
 def wallet_checkin():
     """钱包签到"""

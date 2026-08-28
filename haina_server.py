@@ -559,6 +559,13 @@ vertical-align:-2px;margin-right:6px}
 .loghead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .loghead h2{margin:0}
 .mini{padding:5px 12px;font-size:12.5px;border-radius:8px}
+.utable{width:100%;border-collapse:collapse;font-size:13px}
+.utable th{color:var(--mut);font-weight:500;text-align:left;padding:3px 6px;
+border-bottom:1px solid var(--line);white-space:nowrap}
+.utable td{padding:4px 6px;border-bottom:1px dashed var(--line);white-space:nowrap}
+.utable tr:last-child td{border-bottom:none}
+.utable .num{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:640px){.utable th:nth-child(6),.utable td:nth-child(6){display:none}}
 @media (max-width:640px){
   body{padding:12px}
   .actions{grid-template-columns:repeat(2,1fr)}
@@ -623,6 +630,14 @@ footer{color:var(--mut);font-size:12px;margin:18px 0 8px;text-align:center}
     <span class="mut">运行中日志实时滚动；每个任务都有 15 分钟看门狗，超时自动解锁不会卡死。</span>
   </div>
 </details>
+
+<div class="card">
+  <div class="loghead">
+    <h2>最近 API 调用</h2>
+    <button class="mini" onclick="loadUsage()">刷新</button>
+  </div>
+  <div id="usagebody" class="mut" style="font-size:13px">加载中…</div>
+</div>
 
 <div class="card">
   <h2>运行历史（点击查看输出，重启不丢失）</h2>
@@ -717,6 +732,23 @@ async function viewLogFile(name){followId=null;fileView=true;
     $("log").textContent=d.content;$("log").scrollTop=1e9;
     $("runmeta").innerHTML=`<span class="mut">文件 ${esc(d.name)} · ${esc(d.size)}（只读）</span>`}
   catch(e){showToast(e.message,true)}}
+
+async function loadUsage(){const el=$("usagebody");
+  try{const d=await api("/api/usage");
+    if(d.needs_refresh){
+      el.innerHTML=`<span class="mut">会话已过期，</span><button class="mini" onclick="run('status')">跑一次状态总览刷新会话</button><span class="mut">成功后再看。</span>`;return}
+    if(d.error){el.textContent="加载失败："+d.error;return}
+    if(!d.items.length){el.textContent="暂无调用记录";return}
+    const rows=d.items.map(it=>{
+      const dt=new Date(it.ts*1000),today=new Date().toDateString()===dt.toDateString();
+      const hm=dt.toTimeString().slice(0,8);
+      const time=today?hm:(dt.getMonth()+1)+"-"+dt.getDate()+" "+hm;
+      return `<tr><td>${time}</td><td>${esc(it.model)}</td>
+        <td class="num">${it.prompt.toLocaleString()}</td>
+        <td class="num">${it.completion.toLocaleString()}</td>
+        <td class="num">${it.spend.toFixed(3)}</td><td>${it.use_time}s</td></tr>`}).join("");
+    el.innerHTML=`<table class="utable"><tr><th>时间</th><th>模型</th><th>输入</th><th>输出</th><th>消耗额度</th><th>耗时</th></tr>${rows}</table>`}
+  catch(e){el.textContent="加载失败："+String(e.message||e)}}
 
 async function testNotify(){
   try{const d=await api("/api/notify_test",{method:"POST",
@@ -874,7 +906,7 @@ document.querySelectorAll(".actions button").forEach(
   b=>b.addEventListener("click",()=>run(b.dataset.task)));
 $("btnsave").addEventListener("click",saveSettings);
 $("btnlogin").addEventListener("click",login);
-loop();loadSettings();loadLogs();
+loop();loadSettings();loadLogs();loadUsage();setInterval(loadUsage,60000);
 </script></body></html>"""
 
 
@@ -948,6 +980,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.api_logs()
         if u.path == "/api/logfile":
             return self.api_logfile(self._query())
+        if u.path == "/api/usage":
+            return self.api_usage()
         self._json({"error": "not found"}, 404)
 
     def do_POST(self):
@@ -1169,6 +1203,16 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as exc:
             return self._json({"error": str(exc)}, 500)
         self._json({"name": name, "content": content, "size": size})
+
+    def api_usage(self):
+        """最近 20 条 API 调用记录（站点使用日志，只读，不落盘）。"""
+        try:
+            items = core.get_recent_usage(limit=20)
+        except Exception as exc:
+            return self._json({"items": [], "error": str(exc)[:200]})
+        if items is None:
+            return self._json({"items": [], "needs_refresh": True})
+        self._json({"items": items})
 
     def api_notify_test(self, body):
         """按当前保存的配置发一条测试推送。"""
