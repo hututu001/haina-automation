@@ -1,0 +1,17 @@
+# 海纳百川自动化 - 敏感与运行时文件一律不入库
+
+# 账号配置（含明文密码，用 haina_web.json.example 做模板）
+haina_web.json
+
+# 会话缓存（拿到即可免密登录账号）
+data/
+
+# 运行日志（含 uid / 余额等账户信息）
+logs/
+
+# 本地杂物
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

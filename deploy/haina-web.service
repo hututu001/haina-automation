@@ -1,0 +1,42 @@
+# 海纳百川控制台 · systemd 服务文件
+# 安装（以 /opt/haina 为例，路径不同请同步修改 WorkingDirectory/ExecStart）：
+#   sudo mkdir -p /opt/haina
+#   sudo cp haina.py haina_server.py /opt/haina/
+#   sudo cp deploy/haina-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now haina-web
+#   systemctl status haina-web          # 查看状态
+#   journalctl -u haina-web -f          # 看实时日志（含启动打印的访问令牌）
+#
+# 说明：
+#   - 默认监听 127.0.0.1:8787，配合同机 nginx 反代（deploy/nginx-haina.conf）+ HTTPS 使用
+#   - 定时规则/账号/推送都在网页「设置」里改（存 /opt/haina/haina_web.json），改完即生效
+#   - Restart=always：进程异常退出 5 秒后自动拉起
+#   - 纯 Python 标准库，无需 pip install 任何包
+
+[Unit]
+Description=Haina Web Console (0809.one automation)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/haina
+ExecStart=/usr/bin/python3 haina_server.py --no-browser
+Restart=always
+RestartSec=5
+# 日志走 systemd journal，用 journalctl -u haina-web 查看
+StandardOutput=journal
+StandardError=journal
+# 环境变量（一般不用动）：
+#   TZ 固定东八区，保证 journal 时间戳与网页显示一致
+#   HAINA_WEB_RUN_TIMEOUT 任务看门狗秒数（默认 900）
+Environment=TZ=Asia/Shanghai
+# 轻量加固：仅允许写入工作目录
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/haina
+
+[Install]
+WantedBy=multi-user.target

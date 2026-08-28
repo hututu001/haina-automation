@@ -1,0 +1,22 @@
+{
+  "username": "你的登录邮箱@example.com",
+  "password": "你的密码",
+  "notify": false,
+  "notify_mode": "off",
+  "webhook_url": "",
+  "webhook_when": "fail",
+  "schedule_enabled": true,
+  "signin_time": "00:10",
+  "farm_times": ["06:00", "14:00", "22:00"],
+  "draw_times": [],
+  "draw_all": false,
+  "signin_draw": false,
+  "farm_crop": "",
+  "base_url": "",
+  "farm_url": "",
+  "www_session": "",
+  "farm_session": "",
+  "host": "",
+  "port": 8787,
+  "token": ""
+}
