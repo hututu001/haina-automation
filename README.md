@@ -17,7 +17,8 @@
 | 文件 | 作用 |
 |---|---|
 | `haina.py` | 统一主程序，4 个子命令：`signin`（签到）/ `draw`（抽奖）/ `farm`（农场）/ `status`（只读总览）。所有运行方式的公共核心 |
-| `haina_server.py` | 网页控制台（可选，本地或服务器通用）。网页按钮触发任务、实时日志、仪表盘、内置定时 |
+| `haina_server.py` | 网页控制台后端（可选，本地或服务器通用）。网页按钮触发任务、实时日志、仪表盘、内置定时 |
+| `web/` | 网页控制台前端（`index.html` + `app.js` + `style.css`，明暗双主题）。缺失时自动回退到 `haina_server.py` 内置旧版页面 |
 | `启动控制台.bat` | Windows 双击启动网页控制台（可选） |
 | `ql_haina.sh` | 青龙任务入口（可选，青龙部署用）：source 青龙 env.sh / config.sh 后调起 `haina.py` |
 | `deploy/haina-web.service` | 服务器部署：systemd 服务文件（开机自启 + 崩溃自动拉起） |
@@ -265,6 +266,7 @@ bash ql_haina.sh status            # 只读总览（排查用）
 /opt/haina/
 ├── haina.py
 ├── haina_server.py
+├── web/               # 新版前端（index.html + app.js + style.css，整个目录一起传）
 └── deploy/            # 可选，两个配置模板
     ├── haina-web.service
     └── nginx-haina.conf
@@ -334,7 +336,7 @@ journalctl -u haina-web --since today   # 今天的日志
 ls /opt/haina/logs/            # 任务日志文件（网页里也能看）
 ```
 
-升级：覆盖 `/opt/haina/haina.py` 和 `haina_server.py` 后 `systemctl restart haina-web`。`haina_web.json`、`data/`、`logs/` 都在原地，配置和历史不受影响。
+升级：覆盖 `/opt/haina/haina.py`、`haina_server.py` 和 `web/` 目录后 `systemctl restart haina-web`。`haina_web.json`、`data/`、`logs/` 都在原地，配置和历史不受影响。（`web/` 目录忘了传也能跑，控制台会自动回退到内置旧版页面。）
 
 ---
 

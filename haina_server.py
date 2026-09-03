@@ -11,6 +11,8 @@
   - 内置定时（可选，默认开）：签到每天 00:10、农场每天 6/14/22 点；
     电脑关机错过的时点，开机后 15 秒内自动补跑当天（签到当天没跑过就补，农场补最近错过的时段）
   - 完全复用 haina.py 的逻辑与会话缓存；配置存 haina_web.json，会话缓存存 data/
+  - 前端页面在 web/ 目录（index.html + app.js + style.css）；
+    目录缺失时自动回退到本文件内置的旧版页面（PAGE），保证升级不炸
 
 说明：
   - 默认只绑定 127.0.0.1（仅本机访问）。想用手机/其他电脑访问：
@@ -43,8 +45,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(HERE, "haina_web.json")
 DATA_DIR = os.path.join(HERE, "data")
 LOG_DIR = os.path.join(HERE, "logs")
+WEB_DIR = os.path.join(HERE, "web")
 STATE_FILE = os.path.join(DATA_DIR, "web_state.json")
 CST = timezone(timedelta(hours=8))
+
+# 静态前端文件路由：文件名白名单，杜绝路径穿越
+STATIC_ROUTES = {
+    "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/style.css": ("style.css", "text/css; charset=utf-8"),
+}
 
 DEFAULT_CONFIG = {
     "username": "",
@@ -952,10 +961,26 @@ class Handler(BaseHTTPRequestHandler):
     def _query(self):
         return parse_qs(urlparse(self.path).query)
 
+    def _page_html(self):
+        """优先读 web/index.html（新版前端），缺失时回退到内置旧版页面。"""
+        path = os.path.join(WEB_DIR, "index.html")
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                return fh.read()
+        except OSError:
+            return PAGE
+
+    def _static_file(self, name, ctype):
+        try:
+            with open(os.path.join(WEB_DIR, name), "r", encoding="utf-8") as fh:
+                self._send(200, ctype, fh.read())
+        except OSError:
+            self._json({"error": "static file missing"}, 404)
+
     # ── 路由 ──
     def do_GET(self):
         u = urlparse(self.path)
-        if u.path == "/":
+        if u.path in ("/", "/index.html"):
             q = self._query()
             if not self._client_local():
                 tok = load_config().get("token", "")
@@ -966,10 +991,13 @@ class Handler(BaseHTTPRequestHandler):
                                "需要访问令牌：请用控制台打印的 http://<ip>:8787/?token=xxx 打开")
                     return
                 cookie = f"haina_token={tok}; Path=/" if qt == tok and tok else None
-                self._send(200, "text/html; charset=utf-8", PAGE, cookie=cookie)
+                self._send(200, "text/html; charset=utf-8", self._page_html(), cookie=cookie)
                 return
-            self._send(200, "text/html; charset=utf-8", PAGE)
+            self._send(200, "text/html; charset=utf-8", self._page_html())
             return
+        static = STATIC_ROUTES.get(u.path)
+        if static:
+            return self._static_file(*static)
         if not self._token_ok():
             return self._json({"error": "未授权"}, 401)
         if u.path == "/api/state":

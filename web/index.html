@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>海纳百川控制台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233574f0'/%3E%3Cpath d='M7 20c3-4.5 6-4.5 9 0s6 4.5 9 0M7 13c3-4.5 6-4.5 9 0s6 4.5 9 0' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>
+/* 主题早执行：避免刷新闪白/闪黑。默认跟随系统，手动切换后记忆 */
+(function(){
+  var t = localStorage.getItem("haina-theme");
+  if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════ 顶栏 ═══════════ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15c2.5-3.5 5-3.5 7.5 0s5 3.5 7.5 0M3 9c2.5-3.5 5-3.5 7.5 0s5 3.5 7.5 0"/></svg>
+    </span>
+    <div>
+      <h1>海纳百川控制台</h1>
+      <div class="sub" id="clock">—</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span id="runpill" class="pill hidden"><span class="dot"></span><span id="runpillTxt"></span></span>
+    <button class="icon-btn" id="themeBtn" title="切换明暗主题">
+      <svg id="iconMoon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg id="iconSun" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg>
+    </button>
+    <button class="icon-btn" id="settingsBtn" title="设置">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.08A1.7 1.7 0 0 0 10.12 3V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56h.08a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 仪表盘 -->
+  <section class="stats" id="stats"></section>
+
+  <!-- 登录卡（未配置凭证时显示） -->
+  <section class="card hidden" id="loginCard">
+    <div class="card-head">
+      <span class="card-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        登录海纳百川
+      </span>
+    </div>
+    <div class="login-grid">
+      <div><label class="f">登录邮箱</label><input type="text" id="l_user" autocomplete="off"></div>
+      <div><label class="f">密码</label><input type="password" id="l_pass" placeholder="请输入密码" autocomplete="current-password"></div>
+      <button class="btn-primary" style="width:auto" id="btnlogin">登录并保存凭证</button>
+    </div>
+    <div class="tip">凭证保存在本机 haina_web.json；登录成功后会话缓存存入 data/ 并自动续期，之后基本不再用到密码。换号 / 改密请到「设置 → 账号」。</div>
+  </section>
+
+  <div id="loginBanner" class="banner hidden">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    <span>尚未配置账号：会话缓存有效时功能可用，但定时任务会自动跳过。请先登录或到设置里填写账号。</span>
+  </div>
+
+  <div class="grid">
+    <!-- ═══ 左列 ═══ -->
+    <div class="col">
+
+      <!-- 任务操作 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            任务
+          </span>
+        </div>
+        <div class="actions">
+          <button class="tbtn" data-task="signin" id="btnsignin">
+            <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span id="btnsigninTxt">签到</span></span>
+            <span class="d">查消耗 · 钱包签到 · 领福利</span>
+          </button>
+          <button class="tbtn" data-task="draw" id="btndraw">
+            <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></svg><span id="btndrawTxt">抽奖 ×1</span></span>
+            <span class="d">余额 · 次数 · 奖池</span>
+          </button>
+          <button class="tbtn" data-task="farm">
+            <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V9M12 9c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6zM12 12c0-3 2.2-5 5.5-5 0 3-2.2 5-5.5 5zM4 22h16"/></svg>农场</span>
+            <span class="d">收菜 · 补种 · 兑换</span>
+          </button>
+          <button class="tbtn" data-task="farm_steal">
+            <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>农场+偷菜</span>
+            <span class="d">全服扫描 · 3 体力/次</span>
+          </button>
+          <button class="tbtn" data-task="status">
+            <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>状态总览</span>
+            <span class="d">只读 · 随时可点</span>
+          </button>
+        </div>
+        <div class="tip">运行中按钮自动锁定；每个任务有 15 分钟看门狗，超时自动解锁。写操作带幂等键，重复执行安全。</div>
+      </section>
+
+      <!-- 任务输出 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+            任务输出
+          </span>
+          <button class="btn-ghost" onclick="copyLog()">复制日志</button>
+        </div>
+        <div class="log-meta" id="runmeta">空闲中</div>
+        <pre class="log-box" id="log">点上方按钮开始；输出会实时显示在这里。</pre>
+      </section>
+
+      <!-- 按钮说明 -->
+      <details class="card help-card">
+        <summary>每个按钮做什么？</summary>
+        <div class="help-body">
+          <b>签到</b>：查今日 token 消耗（≥100 万才签）→ 钱包签到 → 自动领取所有可领福利（含签到抽奖机会）。已领过的不会重复领。开了「签到后自动抽奖」会接着把奖抽了（次数遵循抽光设置）。<br>
+          <b>抽奖</b>：先显示余额 / 可抽次数再抽。默认只抽 1 次；设置里开了「抽光模式」就一次抽完全部次数。次数不足时只报状态不抽。<br>
+          <b>农场</b>：一键收菜（只收成熟的）→ 空闲地补种（种子库存优先，不够自动买，买前校验余额；默认种时薪最高的）→ 待兑换额度兑成主站余额（受本周 40% 消耗上限约束）。<br>
+          <b>农场+偷菜</b>：上面全部 + 偷菜（3 体力/次，自动扫描全服可偷目标；竞争激烈，常常无可偷）。<br>
+          <b>状态总览</b>：只读。抽奖面板 + 农场一次看全，不做任何写操作，随时可点，也用于刷新过期会话。
+        </div>
+      </details>
+    </div>
+
+    <!-- ═══ 右列 ═══ -->
+    <div class="col-side">
+
+      <!-- 定时 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+            定时任务
+          </span>
+          <button class="btn-ghost" onclick="openSettings('schedule')">修改</button>
+        </div>
+        <div id="schedinfo"></div>
+        <div class="next-run" id="nextrun"></div>
+      </section>
+
+      <!-- 最近 API 调用 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 16v-5M13 16V8M18 16v-9"/></svg>
+            最近 API 调用
+          </span>
+          <button class="btn-ghost" onclick="loadUsage()">刷新</button>
+        </div>
+        <div id="usagebody" style="font-size:12.5px;color:var(--tx3)">加载中…</div>
+      </section>
+
+      <!-- 运行历史 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 3"/></svg>
+            运行历史
+          </span>
+          <span class="chip mut" id="histCount">0</span>
+        </div>
+        <ul class="ul" id="history"></ul>
+      </section>
+
+      <!-- 日志文件 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            日志文件
+          </span>
+          <button class="btn-ghost" onclick="loadLogs()">刷新</button>
+        </div>
+        <ul class="ul" id="logfiles"><li class="static">加载中…</li></ul>
+      </section>
+    </div>
+  </div>
+
+  <footer>会话缓存自动复用 · 密码仅兜底登录 · 写操作带幂等键可重复执行</footer>
+</main>
+
+<!-- ═══════════ 设置模态框 ═══════════ -->
+<div class="modal-mask" id="settingsModal">
+  <div class="modal">
+    <aside class="modal-nav">
+      <button class="tab-btn active" data-tab="account">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>账号
+      </button>
+      <button class="tab-btn" data-tab="schedule">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>定时
+      </button>
+      <button class="tab-btn" data-tab="behavior">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>任务行为
+      </button>
+      <button class="tab-btn" data-tab="notify">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>推送
+      </button>
+      <button class="tab-btn" data-tab="advanced">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="1.8" fill="var(--card)"/><circle cx="15" cy="12" r="1.8" fill="var(--card)"/><circle cx="8" cy="17" r="1.8" fill="var(--card)"/></svg>高级
+      </button>
+    </aside>
+    <div class="modal-main">
+      <div class="modal-head">
+        <h3>设置</h3>
+        <button class="icon-btn" id="modalClose" title="关闭">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="settings" onsubmit="return false">
+
+          <!-- 账号 -->
+          <div class="pane active" data-pane="account">
+            <h4>站点凭证</h4>
+            <label class="f">登录邮箱</label>
+            <input type="text" id="s_user" autocomplete="off">
+            <label class="f" style="margin-top:12px">密码 <span class="mut">（留空 = 不修改）</span></label>
+            <input type="password" id="s_pass" autocomplete="new-password" placeholder="••••••••">
+            <div class="tip">会话缓存有效时可以不存密码：缓存全失效且无密码时任务会明确报错，不会反复重试。凭证保存在本地 haina_web.json（明文）。</div>
+          </div>
+
+          <!-- 定时 -->
+          <div class="pane" data-pane="schedule">
+            <h4>内置定时 <span class="mut">（替代青龙 cron）</span></h4>
+            <label class="switch-row">
+              <input type="checkbox" id="s_sched"><span class="sw"></span>
+              <span class="sw-txt"><span class="t">启用内置定时</span><span class="d">电脑关机错过的时点，开机后自动补跑当天；已跑过的不会重复。</span></span>
+            </label>
+            <div class="f-row">
+              <div><label class="f">签到时间 <span class="mut">HH:MM</span></label><input type="text" id="s_signin" placeholder="00:10"></div>
+              <div><label class="f">农场时间 <span class="mut">逗号分隔多个</span></label><input type="text" id="s_farm" placeholder="06:00,14:00,22:00"></div>
+            </div>
+            <label class="f" style="margin-top:12px">抽奖时间 <span class="mut">逗号分隔，留空 = 仅手动</span></label>
+            <input type="text" id="s_draw" placeholder="如 12:30,21:00">
+            <div class="tip">24 小时制 HH:MM，也接受 H:M 和中文冒号；改完保存立即生效，无需重启。</div>
+          </div>
+
+          <!-- 任务行为 -->
+          <div class="pane" data-pane="behavior">
+            <h4>抽奖</h4>
+            <label class="switch-row">
+              <input type="checkbox" id="s_drawall"><span class="sw"></span>
+              <span class="sw-txt"><span class="t">抽光模式</span><span class="d">开 = 把可抽次数一次抽完（每抽间隔 0.5 秒）；关 = 每次只抽 1 次。</span></span>
+            </label>
+            <label class="switch-row">
+              <input type="checkbox" id="s_sdraw"><span class="sw"></span>
+              <span class="sw-txt"><span class="t">签到后自动抽奖</span><span class="d">签到领完福利后接着把奖抽了，次数遵循上面的抽光模式。</span></span>
+            </label>
+            <h4>农场</h4>
+            <label class="f">补种作物 cropId <span class="mut">（留空 = 自动选当前能种里时薪最高的）</span></label>
+            <input type="text" id="s_crop" placeholder="如 crop_corn">
+          </div>
+
+          <!-- 推送 -->
+          <div class="pane" data-pane="notify">
+            <h4>任务完成后推送</h4>
+            <label class="f">推送方式</label>
+            <select id="s_nmode">
+              <option value="off">关闭（不推送）</option>
+              <option value="webhook">Webhook（Bark / Server酱 / TG / 钉钉 / 飞书 / 企微）</option>
+              <option value="qinglong">青龙 sendNotify（需青龙环境）</option>
+            </select>
+            <div id="whGroup" class="hidden">
+              <label class="f" style="margin-top:12px">Webhook URL <span class="mut">（按格式自动识别渠道）</span></label>
+              <input type="text" id="s_whurl" placeholder="如 https://api.day.app/你的Key">
+              <label class="f" style="margin-top:12px">推送时机</label>
+              <select id="s_nwhen">
+                <option value="fail">仅失败时（推荐，平时不打扰）</option>
+                <option value="all">每次任务都推</option>
+              </select>
+              <button type="button" class="btn-ghost" style="margin-top:12px" onclick="testNotify()">发送测试推送（先保存设置）</button>
+            </div>
+          </div>
+
+          <!-- 高级 -->
+          <div class="pane" data-pane="advanced">
+            <h4>站点地址</h4>
+            <div class="f-row">
+              <div><label class="f">主站地址</label><input type="text" id="s_base"></div>
+              <div><label class="f">农场地址</label><input type="text" id="s_farmurl"></div>
+            </div>
+            <h4>会话缓存路径 <span class="mut">（留空 = 默认 data/ 目录）</span></h4>
+            <label class="f">www 会话缓存</label><input type="text" id="s_wwwsess">
+            <label class="f" style="margin-top:12px">农场会话缓存</label><input type="text" id="s_farmsess">
+            <h4>网络</h4>
+            <label class="f">监听地址 <span class="mut">（空 = 仅本机；服务器部署填 0.0.0.0，改后需重启）</span></label>
+            <input type="text" id="s_host" placeholder="127.0.0.1">
+            <label class="switch-row" style="margin-top:12px">
+              <input type="checkbox" id="s_tproxy"><span class="sw"></span>
+              <span class="sw-txt"><span class="t">信任反向代理 IP</span><span class="d">nginx HTTPS 反代到本服务时勾选，否则远程访问会被当成"本机"而跳过令牌校验。</span></span>
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-cancel" id="modalCancel">取消</button>
+        <button class="btn-primary slim" id="btnsave">保存设置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
