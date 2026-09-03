@@ -307,7 +307,13 @@ def _mark_for(task):
     """手动/定时运行后写入的补跑标记，避免定时器重复跑同一时点。"""
     today = datetime.now(CST).strftime("%Y-%m-%d")
     if task == "signin":
-        return "last_signin", today
+        # 手动签到只有在签到时点已到后才标记当天，避免提前手动签到误跳过定时签到。
+        cfg = load_config()
+        now_hm = datetime.now(CST).strftime("%H:%M")
+        signin_t = normalize_time(cfg.get("signin_time") or "00:10")
+        if signin_t and now_hm >= signin_t:
+            return "last_signin", today
+        return None, None
     if task in ("farm", "farm_steal"):
         cfg = load_config()
         now_hm = datetime.now(CST).strftime("%H:%M")
