@@ -157,7 +157,7 @@ button { font-family: var(--sans); }
 @media (max-width: 640px) { .login-grid { grid-template-columns: 1fr; } }
 
 /* ---------- 任务按钮 ---------- */
-.actions { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 @media (max-width: 760px) { .actions { grid-template-columns: repeat(2, 1fr); } }
 .tbtn {
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px;

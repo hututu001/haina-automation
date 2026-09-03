@@ -7,6 +7,7 @@
   signin   签到: 查今日 token 消耗(≥100万门槛) → 钱包签到 → 领取所有可领福利
   draw     抽奖: 显示账户/奖池状态, 默认只抽 1 次 (--status-only 仅查看)
   farm     农场: 状态 → 一键收菜 → 自动补种(时薪最优) → 兑换 (--steal 偷菜)
+  redeem   农场·只兑换: 把待兑换额度兑成主站余额, 不做收菜/补种 (供定时兑换用)
   status   只读总览: 抽奖面板 + 农场状态, 不做任何写操作
 
 青龙任务命令(配合 ql_haina.sh 入口):
@@ -1280,6 +1281,47 @@ def cmd_farm(args):
     return 0
 
 
+# ═══════════════════════════════ redeem 只兑换 ═══════════════════════════════
+def cmd_redeem(args):
+    """只兑换：把当周待兑换额度兑成主站余额（受 40% 周消耗上限约束）。
+
+    不做收菜/补种/偷菜，供「定时兑换」单独到点跑，或手动点按钮单独兑。
+    """
+    now = datetime.now(CST)
+    print(f"\n{'─'*55}")
+    print(f"  百川农场·兑换  {now.strftime('%Y-%m-%d %H:%M:%S')} CST")
+    print(f"{'─'*55}")
+
+    print("[*] 正在认证农场（优先复用缓存会话）…")
+    if not farm_auth():
+        return 1
+
+    print("[*] 正在获取农场状态…")
+    boot = get_bootstrap()
+    if not boot:
+        print("[FAIL] 获取农场状态失败", file=sys.stderr)
+        return 1
+
+    show_farm_status(boot)
+    save_summary("farm", _farm_summary(boot))
+
+    print(f"\n{'─'*55}\n  [兑换]")
+    redeem(boot)
+
+    # 收尾刷新状态
+    print("[*] 正在刷新农场状态…")
+    boot = get_bootstrap() or boot
+    save_summary("farm", _farm_summary(boot))
+    wallet = boot.get("wallet") or {}
+    red = (boot.get("weekly") or {}).get("redemption") or {}
+    balance = ((boot.get("newApi") or {}).get("balance") or 0) / (boot.get("quotaPerUnit") or 500000)
+    print(f"\n{'─'*55}")
+    print(f"  收尾: 主站余额 {balance:.2f}  "
+          f"待兑换 {wallet.get('currentWeekPendingQuotaDisplay', 0) or 0:.2f}  "
+          f"本周还可兑 {red.get('remainingDisplay', 0) or 0:.2f}")
+    return 0
+
+
 # ═══════════════════════════════ status 只读总览 ═══════════════════════════════
 def cmd_status(args):
     """只读总览：抽奖面板 + 农场状态。两部分互不影响，任一失败返回非 0。"""
@@ -1426,6 +1468,7 @@ def main():
     p.add_argument("--crop", default=os.environ.get("HAINA_FARM_CROP", ""),
                    help="指定补种作物 cropId（默认自动选时薪最高的）")
 
+    sub.add_parser("redeem", help="只兑换：把待兑换额度兑成主站余额（不做收菜/补种）")
     sub.add_parser("status", help="只读总览：抽奖面板 + 农场状态，不做任何写操作")
 
     args = parser.parse_args()
@@ -1435,6 +1478,8 @@ def main():
         return cmd_draw(args)
     if args.command == "farm":
         return cmd_farm(args)
+    if args.command == "redeem":
+        return cmd_redeem(args)
     return cmd_status(args)
 
 
@@ -1443,6 +1488,7 @@ if __name__ == "__main__":
         "signin": "海纳百川签到",
         "draw": "海纳百川抽奖",
         "farm": "百川农场",
+        "redeem": "百川农场兑换",
         "status": "海纳百川状态",
     }
     command = "signin"

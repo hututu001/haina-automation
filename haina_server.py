@@ -63,6 +63,7 @@ DEFAULT_CONFIG = {
     "signin_time": "00:10",
     "farm_times": ["06:00", "14:00", "22:00"],
     "draw_times": [],                # 抽奖定时（默认空 = 仅手动，防止误抽光次数）
+    "redeem_times": [],              # 兑换定时（默认空 = 兑换随农场任务顺手做）
     "farm_crop": "",
     "draw_all": False,               # 抽奖抽光模式：开=抽光全部次数，关=每次只抽1
     "signin_draw": False,            # 签到领完福利后自动抽奖（次数遵循 draw_all）
@@ -87,6 +88,7 @@ TASKS = {
     "draw":       ("抽奖×1",    ["draw"]),
     "farm":       ("农场",      ["farm"]),
     "farm_steal": ("农场+偷菜", ["farm", "--steal"]),
+    "redeem":     ("兑换",      ["redeem"]),
     "status":     ("状态总览",  ["status"]),
 }
 
@@ -150,6 +152,8 @@ def apply_env():
     e["HAINA_FARM_CROP"] = cfg.get("farm_crop", "")
     e["HAINA_DRAW_ALL"] = "1" if cfg.get("draw_all") else "0"
     e["HAINA_SIGNIN_DRAW"] = "1" if cfg.get("signin_draw") else "0"
+    # 配置了兑换定时后，农场任务不再顺手兑换（兑换独立按时点跑 redeem）
+    e["HAINA_REDEEM_SCHED"] = "1" if cfg.get("redeem_times") else "0"
     for key, env in (("base_url", "HAINA_BASE_URL"), ("farm_url", "HAINA_FARM_URL")):
         if cfg.get(key):
             e[env] = cfg[key]
@@ -267,16 +271,20 @@ def dispatch(task):
     crop = os.environ.get("HAINA_FARM_CROP", "")
     draw_all = os.environ.get("HAINA_DRAW_ALL", "") == "1"
     signin_draw = os.environ.get("HAINA_SIGNIN_DRAW", "") == "1"
+    # 配置了兑换定时（redeem_times）后，农场任务跳过兑换步骤
+    no_redeem = os.environ.get("HAINA_REDEEM_SCHED", "") == "1"
     if task == "signin":
         return core.cmd_signin(ns(draw=signin_draw, draw_all=draw_all))
     if task == "draw":
         return core.cmd_draw(ns(status_only=False, all=draw_all))
     if task == "farm":
         return core.cmd_farm(ns(status_only=False, steal=False,
-                                no_plant=False, no_redeem=False, crop=crop))
+                                no_plant=False, no_redeem=no_redeem, crop=crop))
     if task == "farm_steal":
         return core.cmd_farm(ns(status_only=False, steal=True,
-                                no_plant=False, no_redeem=False, crop=crop))
+                                no_plant=False, no_redeem=no_redeem, crop=crop))
+    if task == "redeem":
+        return core.cmd_redeem(ns())
     return core.cmd_status(ns())
 
 
@@ -312,6 +320,12 @@ def _mark_for(task):
         passed = [t for t in sorted(cfg.get("draw_times") or []) if now_hm >= t]
         if passed:
             return "last_draw", f"{today} {passed[-1]}"
+    if task == "redeem":
+        cfg = load_config()
+        now_hm = datetime.now(CST).strftime("%H:%M")
+        passed = [t for t in sorted(cfg.get("redeem_times") or []) if now_hm >= t]
+        if passed:
+            return "last_redeem", f"{today} {passed[-1]}"
     return None, None
 
 
@@ -485,6 +499,11 @@ def sched_tick():
         start_run("farm", trigger="定时")
         return
 
+    redeem_passed = [t for t in sorted(cfg.get("redeem_times") or []) if now_hm >= t]
+    if redeem_passed and st.get("last_redeem") != f"{today} {redeem_passed[-1]}":
+        start_run("redeem", trigger="定时")
+        return
+
     draw_passed = [t for t in sorted(cfg.get("draw_times") or []) if now_hm >= t]
     if draw_passed and st.get("last_draw") != f"{today} {draw_passed[-1]}":
         start_run("draw", trigger="定时")
@@ -500,6 +519,8 @@ def next_schedule_view(cfg):
         entries.append(("农场", normalize_time(t)))
     for t in cfg.get("draw_times") or []:
         entries.append(("抽奖", normalize_time(t)))
+    for t in cfg.get("redeem_times") or []:
+        entries.append(("兑换", normalize_time(t)))
     out = []
     for label, tt in entries:
         if not tt:
@@ -1064,9 +1085,10 @@ class Handler(BaseHTTPRequestHandler):
                 "signin_time": normalize_time(cfg.get("signin_time") or "00:10"),
                 "farm_times": sorted(t for t in (normalize_time(x) for x in cfg.get("farm_times") or []) if t),
                 "draw_times": sorted(t for t in (normalize_time(x) for x in cfg.get("draw_times") or []) if t),
+                "redeem_times": sorted(t for t in (normalize_time(x) for x in cfg.get("redeem_times") or []) if t),
                 "next": next_schedule_view(cfg),
             },
-            "last_marks": {k: st.get(k) for k in ("last_signin", "last_farm", "last_draw")},
+            "last_marks": {k: st.get(k) for k in ("last_signin", "last_farm", "last_redeem", "last_draw")},
             "settings": {
                 "username": cfg.get("username", ""),
                 "has_password": bool(cfg.get("password")),
@@ -1077,6 +1099,7 @@ class Handler(BaseHTTPRequestHandler):
                 "signin_time": normalize_time(cfg.get("signin_time") or "00:10"),
                 "farm_times": sorted(t for t in (normalize_time(x) for x in cfg.get("farm_times") or []) if t),
                 "draw_times": sorted(t for t in (normalize_time(x) for x in cfg.get("draw_times") or []) if t),
+                "redeem_times": sorted(t for t in (normalize_time(x) for x in cfg.get("redeem_times") or []) if t),
                 "farm_crop": cfg.get("farm_crop", ""),
                 "draw_all": bool(cfg.get("draw_all")),
                 "signin_draw": bool(cfg.get("signin_draw")),
@@ -1169,6 +1192,10 @@ class Handler(BaseHTTPRequestHandler):
             raw = body["draw_times"] if isinstance(body["draw_times"], list) else str(body["draw_times"])
             ts = parse_farm_times(raw) if str(raw).strip() else []
             cfg["draw_times"] = sorted(set(ts))  # 留空 = 仅手动，允许
+        if "redeem_times" in body:
+            raw = body["redeem_times"] if isinstance(body["redeem_times"], list) else str(body["redeem_times"])
+            ts = parse_farm_times(raw) if str(raw).strip() else []
+            cfg["redeem_times"] = sorted(set(ts))  # 留空 = 兑换随农场任务，允许
         if "farm_crop" in body:
             cfg["farm_crop"] = str(body["farm_crop"]).strip()
         if "draw_all" in body:

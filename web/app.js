@@ -113,9 +113,14 @@ function renderSched() {
     `<tr><td>${name}</td><td class="mut">${rule}</td><td style="text-align:right">${
       manual ? '<span class="chip mut">按需点击</span>' :
       (markToday(mark) || '<span class="chip mut">今日待跑</span>')}</td></tr>`;
+  // 兑换：配置了独立时间则显示规则与今日状态；否则随农场任务
+  const redeemRow = sc.redeem_times && sc.redeem_times.length
+    ? row("兑换", `每天 ${esc(sc.redeem_times.join(" / "))}`, lm.last_redeem)
+    : `<tr><td>兑换</td><td class="mut">随农场任务</td><td style="text-align:right"><span class="chip mut">跟随农场</span></td></tr>`;
   $("schedinfo").innerHTML = `<table class="sched-tb">` + [
     row("签到", `每天 ${esc(sc.signin_time)}`, lm.last_signin),
     row("农场", `每天 ${esc(sc.farm_times.join(" / ") || "—")}`, lm.last_farm),
+    redeemRow,
     row("抽奖", sc.draw_times.length ? `每天 ${esc(sc.draw_times.join(" / "))}` : "—", lm.last_draw, !sc.draw_times.length)
   ].join("") + `</table>`;
   $("nextrun").innerHTML = sc.next.length
@@ -242,6 +247,8 @@ async function tick() {
   // 按钮文字随行为设置变化
   $("btndrawTxt").textContent = s.draw_all ? "抽奖 · 抽光" : "抽奖 ×1";
   $("btnsigninTxt").textContent = s.signin_draw ? "签到 + 抽奖" : "签到";
+  // 配置了兑换定时后，农场任务不再顺手兑换
+  $("farmDesc").textContent = (s.redeem_times || []).length ? "收菜 · 补种" : "收菜 · 补种 · 兑换";
   // 输出面板
   if (!fileView) {
     if (busy && state.current) {
@@ -342,6 +349,7 @@ async function loadSettings() {
   $("s_signin").value = s.signin_time;
   $("s_farm").value = s.farm_times.join(",");
   $("s_draw").value = (s.draw_times || []).join(",");
+  $("s_redeem").value = (s.redeem_times || []).join(",");
   $("s_crop").value = s.farm_crop || "";
   $("s_sched").checked = !!s.schedule_enabled;
   $("s_sdraw").checked = !!s.signin_draw;
@@ -365,6 +373,7 @@ async function saveSettings() {
     username: $("s_user").value.trim(), farm_crop: $("s_crop").value.trim(),
     signin_time: $("s_signin").value.trim(), farm_times: $("s_farm").value,
     draw_times: $("s_draw").value,
+    redeem_times: $("s_redeem").value,
     schedule_enabled: $("s_sched").checked,
     signin_draw: $("s_sdraw").checked, draw_all: $("s_drawall").checked,
     notify_mode: $("s_nmode").value, webhook_url: $("s_whurl").value.trim(),

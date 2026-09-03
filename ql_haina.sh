@@ -9,12 +9,13 @@ if [[ $# -gt 0 ]]; then
 fi
 
 case "$CMD" in
-  signin|draw|farm|status) ;;
+  signin|draw|farm|redeem|status) ;;
   *)
-    echo "用法: bash ql_haina.sh <signin|draw|farm|status> [参数...]" >&2
+    echo "用法: bash ql_haina.sh <signin|draw|farm|redeem|status> [参数...]" >&2
     echo "  signin   签到 + 领取福利（每天 00:10）" >&2
     echo "  draw     抽奖 1 次（任务禁用，手动运行）" >&2
     echo "  farm     农场收菜/补种/兑换（每天 6/14/22 点；偷菜加 --steal）" >&2
+    echo "  redeem   只兑换：待兑换额度兑成主站余额（定时兑换用）" >&2
     echo "  status   只读状态总览（签到 + 农场，排查用）" >&2
     exit 2
     ;;

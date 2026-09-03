@@ -89,11 +89,15 @@
           </button>
           <button class="tbtn" data-task="farm">
             <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V9M12 9c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6zM12 12c0-3 2.2-5 5.5-5 0 3-2.2 5-5.5 5zM4 22h16"/></svg>农场</span>
-            <span class="d">收菜 · 补种 · 兑换</span>
+            <span class="d" id="farmDesc">收菜 · 补种 · 兑换</span>
           </button>
           <button class="tbtn" data-task="farm_steal">
             <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>农场+偷菜</span>
             <span class="d">全服扫描 · 3 体力/次</span>
+          </button>
+          <button class="tbtn" data-task="redeem">
+            <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13M13 3l4 4-4 4M20 17H7M11 13l-4 4 4 4"/></svg>兑换</span>
+            <span class="d">待兑换 → 主站余额</span>
           </button>
           <button class="tbtn" data-task="status">
             <span class="t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>状态总览</span>
@@ -124,6 +128,7 @@
           <b>抽奖</b>：先显示余额 / 可抽次数再抽。默认只抽 1 次；设置里开了「抽光模式」就一次抽完全部次数。次数不足时只报状态不抽。<br>
           <b>农场</b>：一键收菜（只收成熟的）→ 空闲地补种（种子库存优先，不够自动买，买前校验余额；默认种时薪最高的）→ 待兑换额度兑成主站余额（受本周 40% 消耗上限约束）。<br>
           <b>农场+偷菜</b>：上面全部 + 偷菜（3 体力/次，自动扫描全服可偷目标；竞争激烈，常常无可偷）。<br>
+          <b>兑换</b>：把待兑换额度单独兑成主站余额（受本周 40% 消耗上限约束），不收菜不补种。设置里填了「兑换时间」后农场任务不再顺手兑换，到点自动单独兑。<br>
           <b>状态总览</b>：只读。抽奖面板 + 农场一次看全，不做任何写操作，随时可点，也用于刷新过期会话。
         </div>
       </details>
@@ -237,9 +242,11 @@
               <div><label class="f">签到时间 <span class="mut">HH:MM</span></label><input type="text" id="s_signin" placeholder="00:10"></div>
               <div><label class="f">农场时间 <span class="mut">逗号分隔多个</span></label><input type="text" id="s_farm" placeholder="06:00,14:00,22:00"></div>
             </div>
-            <label class="f" style="margin-top:12px">抽奖时间 <span class="mut">逗号分隔，留空 = 仅手动</span></label>
-            <input type="text" id="s_draw" placeholder="如 12:30,21:00">
-            <div class="tip">24 小时制 HH:MM，也接受 H:M 和中文冒号；改完保存立即生效，无需重启。</div>
+            <div class="f-row" style="margin-top:12px">
+              <div><label class="f">抽奖时间 <span class="mut">逗号分隔，留空 = 仅手动</span></label><input type="text" id="s_draw" placeholder="如 12:30,21:00"></div>
+              <div><label class="f">兑换时间 <span class="mut">留空 = 随农场任务</span></label><input type="text" id="s_redeem" placeholder="如 23:00"></div>
+            </div>
+            <div class="tip">24 小时制 HH:MM，也接受 H:M 和中文冒号；改完保存立即生效，无需重启。填了兑换时间后，兑换会脱离农场任务、到点单独跑（农场只收菜补种），手动点「兑换」按钮也可单独兑。</div>
           </div>
 
           <!-- 任务行为 -->
