@@ -8,6 +8,7 @@
   draw     抽奖: 显示账户/奖池状态, 默认只抽 1 次 (--status-only 仅查看)
   farm     农场: 状态 → 一键收菜 → 自动补种(时薪最优) → 兑换 (--steal 偷菜)
   redeem   农场·只兑换: 把待兑换额度兑成主站余额, 不做收菜/补种 (供定时兑换用)
+  steal    农场·只偷菜: 扫描全服可偷目标并偷取, 不做收菜/补种 (供定时偷菜用)
   status   只读总览: 抽奖面板 + 农场状态, 不做任何写操作
 
 青龙任务命令(配合 ql_haina.sh 入口):
@@ -1322,6 +1323,44 @@ def cmd_redeem(args):
     return 0
 
 
+# ═══════════════════════════════ steal 只偷菜 ═══════════════════════════════
+def cmd_steal(args):
+    """只偷菜：扫描全服可偷目标并偷取（体力允许范围内，3 体力/次）。
+
+    不做收菜/补种/兑换，供「定时偷菜」单独到点跑，或手动点按钮单独偷。
+    """
+    now = datetime.now(CST)
+    print(f"\n{'─'*55}")
+    print(f"  百川农场·偷菜  {now.strftime('%Y-%m-%d %H:%M:%S')} CST")
+    print(f"{'─'*55}")
+
+    print("[*] 正在认证农场（优先复用缓存会话）…")
+    if not farm_auth():
+        return 1
+
+    print("[*] 正在获取农场状态…")
+    boot = get_bootstrap()
+    if not boot:
+        print("[FAIL] 获取农场状态失败", file=sys.stderr)
+        return 1
+
+    show_farm_status(boot)
+    save_summary("farm", _farm_summary(boot))
+
+    print(f"\n{'─'*55}\n  [偷菜]")
+    steal_pass(boot)
+
+    # 收尾刷新状态
+    print("[*] 正在刷新农场状态…")
+    boot = get_bootstrap() or boot
+    save_summary("farm", _farm_summary(boot))
+    stamina = boot.get("stamina") or {}
+    print(f"\n{'─'*55}")
+    print(f"  收尾: 体力 {stamina.get('current', 0)}/{stamina.get('max', '?')}  "
+          f"(每 20 分钟回 1 点)")
+    return 0
+
+
 # ═══════════════════════════════ status 只读总览 ═══════════════════════════════
 def cmd_status(args):
     """只读总览：抽奖面板 + 农场状态。两部分互不影响，任一失败返回非 0。"""
@@ -1469,6 +1508,7 @@ def main():
                    help="指定补种作物 cropId（默认自动选时薪最高的）")
 
     sub.add_parser("redeem", help="只兑换：把待兑换额度兑成主站余额（不做收菜/补种）")
+    sub.add_parser("steal", help="只偷菜：扫描全服可偷目标并偷取（体力允许范围内）")
     sub.add_parser("status", help="只读总览：抽奖面板 + 农场状态，不做任何写操作")
 
     args = parser.parse_args()
@@ -1480,6 +1520,8 @@ def main():
         return cmd_farm(args)
     if args.command == "redeem":
         return cmd_redeem(args)
+    if args.command == "steal":
+        return cmd_steal(args)
     return cmd_status(args)
 
 
@@ -1489,6 +1531,7 @@ if __name__ == "__main__":
         "draw": "海纳百川抽奖",
         "farm": "百川农场",
         "redeem": "百川农场兑换",
+        "steal": "百川农场偷菜",
         "status": "海纳百川状态",
     }
     command = "signin"

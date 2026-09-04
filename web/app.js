@@ -117,10 +117,15 @@ function renderSched() {
   const redeemRow = sc.redeem_times && sc.redeem_times.length
     ? row("兑换", `每天 ${esc(sc.redeem_times.join(" / "))}`, lm.last_redeem)
     : `<tr><td>兑换</td><td class="mut">随农场任务</td><td style="text-align:right"><span class="chip mut">跟随农场</span></td></tr>`;
+  // 偷菜：与农场完全分开，未配置时间 = 仅手动
+  const stealRow = sc.steal_times && sc.steal_times.length
+    ? row("偷菜", `每天 ${esc(sc.steal_times.join(" / "))}`, lm.last_steal)
+    : row("偷菜", "—", null, true);
   $("schedinfo").innerHTML = `<table class="sched-tb">` + [
     row("签到", `每天 ${esc(sc.signin_time)}`, lm.last_signin),
     row("农场", `每天 ${esc(sc.farm_times.join(" / ") || "—")}`, lm.last_farm),
     redeemRow,
+    stealRow,
     row("抽奖", sc.draw_times.length ? `每天 ${esc(sc.draw_times.join(" / "))}` : "—", lm.last_draw, !sc.draw_times.length)
   ].join("") + `</table>`;
   $("nextrun").innerHTML = sc.next.length
@@ -288,6 +293,7 @@ async function run(task) {
     } else if (!confirm("确定抽奖 1 次？")) return;
   }
   if (task === "farm_steal" && !confirm("农场流程 + 偷菜（消耗体力），确定？")) return;
+  if (task === "steal" && !confirm("只偷菜（3 体力/次，自动扫描全服可偷目标），确定？")) return;
   followId = null; fileView = false;
   $("runmeta").innerHTML = '<span class="mut">正在启动…</span>';
   $("log").textContent = "任务已启动，等待第一行输出…";
@@ -350,6 +356,7 @@ async function loadSettings() {
   $("s_farm").value = s.farm_times.join(",");
   $("s_draw").value = (s.draw_times || []).join(",");
   $("s_redeem").value = (s.redeem_times || []).join(",");
+  $("s_steal").value = (s.steal_times || []).join(",");
   $("s_crop").value = s.farm_crop || "";
   $("s_sched").checked = !!s.schedule_enabled;
   $("s_sdraw").checked = !!s.signin_draw;
@@ -374,6 +381,7 @@ async function saveSettings() {
     signin_time: $("s_signin").value.trim(), farm_times: $("s_farm").value,
     draw_times: $("s_draw").value,
     redeem_times: $("s_redeem").value,
+    steal_times: $("s_steal").value,
     schedule_enabled: $("s_sched").checked,
     signin_draw: $("s_sdraw").checked, draw_all: $("s_drawall").checked,
     notify_mode: $("s_nmode").value, webhook_url: $("s_whurl").value.trim(),
